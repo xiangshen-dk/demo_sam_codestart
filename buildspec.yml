@@ -1,0 +1,16 @@
+version: 0.1
+phases:
+  build:
+    commands:
+      - echo Entering build phase...
+      - echo Build started on `date`
+      - pip install --upgrade awscli               # To get the latest CLI. 
+      - mvn package shade:shade                    # Use Maven to generate the shade Jar
+      - jar xf target/Feedback*.jar                # Preparation for SAM 
+      - rm -rf target src buildspec.yml pom.xml    # Remove unnecessary files
+      # If you change the output here
+      # you need update the artifacts section below and the CodePipeline stage too.
+      - aws cloudformation package --template template.yml --s3-bucket $S3_BUCKET --output-template template-export.yml
+artifacts:
+  files:
+    - template-export.yml

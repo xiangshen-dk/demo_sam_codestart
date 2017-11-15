@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+- AWS::Serverless-2016-10-31   # Serverless transformation
+- AWS::CodeStar                # CodeStar transformation
+
+Parameters:
+  ProjectId:
+    Type: String
+    Description: AWS CodeStar projectID used to associate new resources to team members
+  XRayTracing:
+    Type: String
+    Description: Specifies X-Ray tracing mode. Accepted values are Active and PassThrough
+  Stage:
+    Type: String
+    Description: Specifies stage name
+Resources:
+  FeedbackFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.aws.codestar.demo.handler.FeedbackHandler
+      Runtime: java8
+      MemorySize: 1024              # Lambda function memory size in MB
+      Timeout: 15                   # Lambda function timeout in seconds
+      Tracing: !Ref XRayTracing     # Enable X-Ray tracing for the function
+      Role:
+        Fn::ImportValue:
+          !Join ['-', [!Ref 'ProjectId', !Ref 'AWS::Region', 'LambdaTrustRole']]
+      Events:                       # depending on the requirements and design, each API could map to its own Lambda 
+        GetRoot:
+          Type: Api
+          Properties:
+            Path: /
+            Method: get
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /feedback
+            Method: get
+        PostEvent:
+          Type: Api
+          Properties:
+            Path: /feedback
+            Method: post
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref FeedbackTable   # Reference of the DynamoDB table
+          XRAY_TRACING: !Ref XRayTracing   # Reference of the X-Ray tracing flag
+  FeedbackTable:
+    Type: AWS::DynamoDB::Table             # SimpleTable can be used if we don't care about the other props
+    Properties:
+      TableName: !Sub DevDayFeedback-${Stage}    # Define the table name. Currently SimpleTable doesn't support it but it's coming soon
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+Outputs:
+  ApiUrl:                                  # Need this output so our testing action can use it
+    Description: URL for application
+    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod'
+    Export:
+      Name: !Sub 'ApiUrl-${Stage}'

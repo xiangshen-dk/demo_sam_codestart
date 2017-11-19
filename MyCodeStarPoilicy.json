@@ -41,8 +41,8 @@
                 "dynamodb:Scan"
             ],
             "Resource": [
-                "arn:aws:dynamodb:us-east-1:111196147180:table/Feedback-Production",
-                "arn:aws:dynamodb:us-east-1:111196147180:table/Feedback-Beta"
+                "arn:aws:dynamodb:us-east-1:<your AWS account id>:table/Feedback-Production",
+                "arn:aws:dynamodb:us-east-1:<your AWS account id>:table/Feedback-Beta"
             ]
         },
         {
